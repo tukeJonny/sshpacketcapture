@@ -4,7 +4,7 @@ import time
 import paramiko
 
 from utils import get_logger
-from exceptions import SSHSessionInactiveError
+#from exceptions import SSHSessionInactiveError
 #paramikoでSSH接続して、tcpdumpによるパケットキャプチャを行う
 
 class SSHHandler(object):
@@ -29,6 +29,16 @@ class SSHHandler(object):
         )
         self.logger.info("[+] Connect Success")
 
+    def execute(self, command):
+        session = self.ssh_handler.get_transport().open_session()
+        if session.active:
+            self.logger.info("[*] Executing command...")
+            session.exec_command(command)
+            self.logger.info("[*] Execute result below")
+            return session
+        else:
+            raise ValueError("SSH Session Error")
+
     def start_capture(self, iface, pktcount, bpf_filter=None, bufsize=1024):
         self.logger.info("[+] Start Capture!")
         command = [
@@ -43,24 +53,32 @@ class SSHHandler(object):
         command = ' '.join(command)
         self.logger.info("[*] Let's Execute \"{}\"".format(command))
 
-        self.logger.info("[*] Opening ssh session...")
-        session = self.ssh_handler.get_transport().open_session()
-        if session.active:
-            self.logger.info("[*] Executing command...")
-            session.exec_command(command)
-            self.logger.info("[*] Execute result below")
-            while True:
-                if session.exit_status_ready():
-                    self.logger.info("[+] session exit")
-                    break
-                read_list, write_list, exceptional_list = select.select([session],[],[],0.0)
-                if len(read_list) > 0:
-                    self.logger.info(session.recv(bufsize))
-        else:
-            raise SSHSessionInactiveError("SSH session is inactive!")
+        session = self.execute(command)
+
+        # self.logger.info("[*] Opening ssh session...")
+        # session = self.ssh_handler.get_transport().open_session()
+        # if session.active:
+        #     self.logger.info("[*] Executing command...")
+        #     session.exec_command(command)
+        #     self.logger.info("[*] Execute result below")
+        while True:
+            if session.exit_status_ready():
+                self.logger.info("[+] session exit")
+                break
+            read_list, write_list, exceptional_list = select.select([session],[],[],0.0)
+            if len(read_list) > 0:
+                self.logger.info(session.recv(bufsize))
+        # else:
+        #     # raise SSHSessionInactiveError("SSH session is inactive!")
+        #     raise ValueError("SSH Session Error")
         self.logger.info("[+] Executed.")
 
-    def download_pcap(self, local_path):
+    def remove_remote_file(self):
+        self.logger.info("[*] Removing remote file {}".format(self.save_path))
+        self.execute("rm -f {}".format(self.save_path))
+        self.logger.info("[+] Remove complete.")
+
+    def download_pcap(self, local_path, cleanup=True):
         self.logger.info("[*] Download Pcap file to {}".format(local_path))
         self.logger.info("[*] Opening sftp session...")
         sftp = self.ssh_handler.open_sftp()
@@ -72,6 +90,7 @@ class SSHHandler(object):
         sftp.close()
 
         self.logger.info("[+] Download complete.")
+        self.remove_remote_file()
 
     def close(self):
         self.ssh_handler.close()

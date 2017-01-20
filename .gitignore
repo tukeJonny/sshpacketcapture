@@ -1,6 +1,8 @@
 venv/
 .python-version
 .idea
+*.pyc
+__init__.py
 
 src/main.py
 src/__pycache__/

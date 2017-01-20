@@ -5,7 +5,6 @@ import paramiko
 
 from utils import get_logger
 #from exceptions import SSHSessionInactiveError
-#paramikoでSSH接続して、tcpdumpによるパケットキャプチャを行う
 
 class SSHHandler(object):
     def __init__(self, host, port, user, password, save_path):
@@ -55,12 +54,6 @@ class SSHHandler(object):
 
         session = self.execute(command)
 
-        # self.logger.info("[*] Opening ssh session...")
-        # session = self.ssh_handler.get_transport().open_session()
-        # if session.active:
-        #     self.logger.info("[*] Executing command...")
-        #     session.exec_command(command)
-        #     self.logger.info("[*] Execute result below")
         while True:
             if session.exit_status_ready():
                 self.logger.info("[+] session exit")
@@ -68,9 +61,6 @@ class SSHHandler(object):
             read_list, write_list, exceptional_list = select.select([session],[],[],0.0)
             if len(read_list) > 0:
                 self.logger.info(session.recv(bufsize))
-        # else:
-        #     # raise SSHSessionInactiveError("SSH session is inactive!")
-        #     raise ValueError("SSH Session Error")
         self.logger.info("[+] Executed.")
 
     def remove_remote_file(self):

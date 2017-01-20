@@ -62,11 +62,17 @@ class SSHHandler(object):
             if len(read_list) > 0:
                 self.logger.info(session.recv(bufsize))
         self.logger.info("[+] Executed.")
+        self.debug()
 
     def remove_remote_file(self):
         self.logger.info("[*] Removing remote file {}".format(self.save_path))
         self.execute("rm -f {}".format(self.save_path))
         self.logger.info("[+] Remove complete.")
+
+    def debug(self):
+        self.logger.info("[*] ls /tmp")
+        self.logger.info(self.execute("ls /tmp").recv(1024))
+
 
     def download_pcap(self, local_path, cleanup=True):
         self.logger.info("[*] Download Pcap file to {}".format(local_path))
@@ -80,6 +86,7 @@ class SSHHandler(object):
         sftp.close()
 
         self.logger.info("[+] Download complete.")
+        self.logger.info("[+] Pcap file is at {}".format(self.save_path))
         self.remove_remote_file()
 
     def close(self):

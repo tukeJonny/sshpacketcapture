@@ -1,7 +1,10 @@
 #-*- coding: utf-8 -*-
-from scapy.all import*
+from collections import defaultdict
 import logging
 logging.getLogger("scapy.runtime").setLevel(logging.ERROR)
+
+from http_parser.http import HttpStream, HttpParser
+from scapy.all import*
 
 class Parser(object):
     """
@@ -10,7 +13,7 @@ class Parser(object):
     def __init__(self, pcap_path):
         self.pkts = rdpcap(pcap_path)
 
-    def extract(self):
+    def extract_generator(self):
         """
         自身のプロトコルのパケットのみ抽出
         :return:
@@ -23,27 +26,53 @@ class Parser(object):
 class HTTPParser(Parser):
     def __init__(self, *args, **kwargs):
         super(HTTPParser, self).__init__(*args, **kwargs)
+        self.methods = ["GET", "POST"]
+        self.only_request = True
 
-    def extract(self):
-        pass
+    def extract_generator(self, pkts):
+        for pkt in pkts:
+            if pkt[TCP].dport == 80 or not self.only_request:
+                yield pkt
 
-    def list_ips(self):
-        pass
+    # def list_ips(self):
+    #     ips = []
+    #     for pkt in self.extract_generator():
+    #         if pkt.haslayer(IP):
+    #             ips.append(pkt[IP].src)
+    #     return ips
 
     def list_headers(self):
         pass
 
+    def list_sessions(self):
+        sessions = [(k,v) for k, v in self.pkts.sessions().items()]
+        return sessions
+
     def list_payloads(self):
-        pass
+        payloads = []
+        for pkt in self.extract_generator():
+                payloads.append(pkt.sprintf("{Raw:%Raw.load%}\n").split('\n'))
+        return payloads
 
     def parse(self):
-        s=""
-        for pkt in self.pkts:
-            if str(pkt).find("GET"):
-                s += pkt.sprintf("{Raw:%Raw.load%}\n")
-            else:
-                self.logger.info("[!] this packet is not HTTP...")
-        return s
+        ret = {
+            'sessions': {
 
+            }
+        }
+        for session, pkts in self.pkts.sessions().items():
+            ret['sessions'][session] = []
+            for pkt in self.extract_generator(pkts):
+                if pkt.haslayer(Raw):
+                    raw = pkt[Raw].load
+                    p = HttpParser()
+                    p.execute(raw, len(raw))
+                    ret['sessions'][session].append({
+                        'method': p.get_method(),
+                        'url': p.get_url(),
+                        'version': p.get_version(),
+                        'headers': p.get_headers(),
+                    })
+        return ret
 
 

@@ -31,7 +31,7 @@ class SSHHandler(object):
     def execute(self, command):
         session = self.ssh_handler.get_transport().open_session()
         if session.active:
-            self.logger.info("[*] Executing command...")
+            self.logger.info("[*] Executing {}...".format(command))
             session.exec_command(command)
             self.logger.info("[*] Execute result below")
             return session
@@ -62,7 +62,7 @@ class SSHHandler(object):
             if len(read_list) > 0:
                 self.logger.info(session.recv(bufsize))
         self.logger.info("[+] Executed.")
-        self.debug()
+        #self.debug()
 
     def remove_remote_file(self):
         self.logger.info("[*] Removing remote file {}".format(self.save_path))

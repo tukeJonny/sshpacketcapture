@@ -69,9 +69,15 @@ class HTTPParser(Parser):
                     p.execute(raw, len(raw))
                     ret['sessions'][session].append({
                         'method': p.get_method(),
-                        'url': p.get_url(),
+                        'url': [
+                            ('full_url', p.get_url()),
+                            ('path', p.get_path()),
+                            ('query', p.get_query_string()),
+                            ('fragment', p.get_fragment()),
+                        ],
                         'version': p.get_version(),
                         'headers': p.get_headers(),
+                        'body': p.recv_body(),
                     })
         return ret
 

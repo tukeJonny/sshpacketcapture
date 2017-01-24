@@ -14,17 +14,31 @@ class MarkDownWriter(Writer):
 
     def write(self, fpath):
         with open(fpath, "w") as f:
-            f.write("# ")
             for session in self.parsed_obj['sessions'].keys():
-                f.write("# {}\n".format(session))
-                for pkt in self.parsed_obj['sessions'][session]:
-                    f.write('## Method: {}\n'.format(pkt['method'])),
-                    f.write('## URL: {}\n'.format(pkt['url'])),
-                    f.write('## Version: {}\n'.format(pkt['version'])),
-                    f.write('## Headers: \n')
+                f.write("## {}\n".format(session))
+                for idx, pkt in enumerate(self.parsed_obj['sessions'][session]):
+                    f.write('[{}]\n'.format(idx))
+                    #Method
+                    f.write('### Method: \n'),
+                    f.write('\t- {}\n'.format(pkt['method']))
+
+                    #URL
+                    f.write('### URL: \n'),
+                    for name, value in pkt['url']:
+                        f.write('\t- {}: {}\n'.format(name, value))
+
+                    #Version
+                    f.write('### Version: \n'),
+                    f.write('\t- {}\n'.format(pkt['version']))
+
+                    #Headers
+                    f.write('### Headers: \n')
                     for header,value in pkt['headers'].items():
                         f.write('\t- {}: {}\n'.format(header, value))
-                f.write('\n-----\n')
+
+                    #Body
+                    f.write('### Body: \n')
+                    f.write(pkt['body'].decode('utf-8'))
 
 class TextWriter(Writer):
     def __init__(self):

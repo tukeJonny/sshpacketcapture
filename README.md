@@ -7,3 +7,6 @@ $ source venv/bin/activate
 (venv) $ python main.py --help
 (venv) $ python main.py -u root -i 127.0.0.1
 ```
+
+# Known Bugs
+* http_parserがクエリパラメータを正しくとってこれていない模様？（１つしかクエリパラメータを取れない)
